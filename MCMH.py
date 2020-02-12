@@ -77,5 +77,18 @@ for i in range(5):
     plt.title(r"Distribucion del $\beta_{:.0f}$. Con un valor medio de {:.2f} $\pm$ {:.2f}".format(float(i) , float(mB), float(desv)))
     plt.xlabel(r"$\beta_{:.0f}$".format(float(i)))
 plt.savefig('MCMH.png')
-
-
+#bono
+gamma = 0.05
+initialbets = [1,1,1,1,1]
+def gradiente (y, x, v1, sigmas):
+    derv = np.zeros(5)
+    for i in range(5):
+        v2 = v1
+        v2[i] = v1[i]+0.01
+        derv[i] = loglikelihood(y, x, v2 , sigmas) - loglikelihood(y, x, v1, sigmas)
+        derv[i] = derv[i]/0.01
+    return derv
+    
+while dev>0.005:
+    curentbets = initialbets
+    initialbets = curentbets - gamma * gradiente(Y, X, curentbets, sigmas)
