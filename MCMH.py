@@ -21,10 +21,10 @@ def modelo(v, x):
     return notas
 
 #Comparacion de la propuesta con los datos experimentales en logaritmo
-def likelihood(y, x, v, sigmas):
+def loglikelihood(y, x, v, sigmas):
     L = np.zeros(len(y))
     for i in range(len(y)):
-        L += (1.0/np.sqrt(2.0*np.pi*sigmas[i]**2))*np.exp(-0.5*(modelo(v,x[i,:])-y[i])**2/(sigmas[i]**2))
+        L += np.log(1.0/np.sqrt(2.0*np.pi*sigmas[i]**2))+(-0.5*(modelo(v,x[i,:])-y[i])**2/(sigmas[i]**2))
     return L
 
 def logposterior(L,P,y):
@@ -41,16 +41,16 @@ Sigmas = np.ones(len(Y))*0.1
 
 #Numero con el que se realizara el MCMH
 N = 10000
-lista_v = [[1,1,1,1,1]]
-sigma_v=1
+lista_v = [[0,0,0,0,0]]
+sigma_v=0.01
 for i in range(1,N):
     #Proponemos un nuevo beta en funcion del anterior mas una distribucion normal
     propuesta_v  = lista_v[i-1] + np.random.normal(loc=0.0, scale=sigma_v, size=5)
     
     #Se crean los Posteriors nuevo, y viejo con los anteriores, con el fin de tener el criterio de comparacion
   
-    logposterior_viejo = logposterior(likelihood(Y,X,lista_v[i-1],Sigmas),logprior(lista_v[i-1]),Y)
-    logposterior_nuevo = logposterior(likelihood(Y,X,propuesta_v,Sigmas),logprior(propuesta_v),Y)     
+    logposterior_viejo = logposterior(loglikelihood(Y,X,lista_v[i-1],Sigmas),logprior(lista_v[i-1]),Y)
+    logposterior_nuevo = logposterior(loglikelihood(Y,X,propuesta_v,Sigmas),logprior(propuesta_v),Y)     
     
     #criterio de comparacion
     r = min(np.exp(logposterior_nuevo-logposterior_viejo))
@@ -67,24 +67,15 @@ for i in range(1,N):
 lista_v = np.array(lista_v)
 
 #Construyamos los histagramas de cada uno de los cinco betas
-plt.figure(figsize=(20, 20))
+plt.figure(figsize=(20, 15))
 for i in range(5):
     plt.subplot(2,3,i+1)
-    a, b, c = plt.hist(lista_v[:,i], bins=100, density=True)
+    a, b, c = plt.hist(lista_v[:,i], bins=50, density=True)
     bin_max = np.where(a == a.max())
     desv = np.std(lista_v[:,i])
-    mV = np.mean(lista_v[:,i])
-    plt.title(r"Distribucion del $\beta_{:.0f}$. Con un valor medio de {:.2f}".format(float(i) , float(b[bin_max][0])))
-    
-plt.savefig('casiqueno.png')
-#El histograma con los datos de los bins para encontrar el maximo
-#a, b, c = plt.hist(lista_v, bins=100, density=True)
+    mB = np.mean(lista_v[:,i])
+    plt.title(r"Distribucion del $\beta_{:.0f}$. Con un valor medio de {:.2f} $\pm$ {:.2f}".format(float(i) , float(mB), float(desv)))
+    plt.xlabel(r"$\beta_{:.0f}$".format(float(i)))
+plt.savefig('MCMH.png')
 
-#Encontramos el maximo del histograma (la maxima probabilidad)
-#bin_max = np.where(a == a.max())
-#desv = np.std(lista_v)
-#mV = np.mean(lista_v[:,i])
 
-#plt.title('Velocidad de salida '+ str(b[bin_max][0]) + ' m/s. El valor medio es ' + str(mV) + ' m/s. Y la desviacion estandar es ' + str(desv))
-#Guardamos la figura
-#plt.savefig('casiqueno.pdf')
